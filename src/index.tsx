@@ -334,7 +334,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
     <box>
       <box onMouseDown={toggleMode}>
         <text fg={theme().text}>
-          {mode() === "detail" ? "▼" : "▶"} <b>Context</b>
+          {mode() === "detail" ? "▼" : "▶"} <b>Context management</b>
         </text>
         <text fg={theme().textMuted}>
           {state().tokens.toLocaleString()} tokens ({state().percent ?? 0}% used)
@@ -349,36 +349,26 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
         </text>
       </box>
 
-      {/* Compact mode: only show Input/Output/Reasoning/Cache percentages */}
-      {mode() === "compact" && bd() && (
-        <>
-          {bd()!.input > 0 && (
-            <text fg={theme().textMuted}>
-              Input {bd()!.input}%
-            </text>
-          )}
-          {bd()!.output > 0 && (
-            <text fg={theme().textMuted}>
-              Output {bd()!.output}%
-            </text>
-          )}
-          {bd()!.reasoning > 0 && (
-            <text fg={theme().textMuted}>
-              Reasoning {bd()!.reasoning}%
-            </text>
-          )}
-          {bd()!.cacheRead > 0 && (
-            <text fg={theme().textMuted}>
-              Cache read {bd()!.cacheRead}%
-            </text>
-          )}
-          {bd()!.cacheWrite > 0 && (
-            <text fg={theme().textMuted}>
-              Cache wrt {bd()!.cacheWrite}%
-            </text>
-          )}
-        </>
-      )}
+       {/* Compact mode: always show Input/Output/Reasoning/Cache percentages */}
+       {mode() === "compact" && bd() && (
+         <>
+           <text fg={theme().textMuted}>
+             Input {bd()!.input}%
+           </text>
+           <text fg={theme().textMuted}>
+             Output {bd()!.output}%
+           </text>
+           <text fg={theme().textMuted}>
+             Reasoning {bd()!.reasoning}%
+           </text>
+           <text fg={theme().textMuted}>
+             Cache read {bd()!.cacheRead}%
+           </text>
+           <text fg={theme().textMuted}>
+             Cache wrt {bd()!.cacheWrite}%
+           </text>
+         </>
+       )}
 
       {/* Detail mode: show full breakdown */}
       {mode() === "detail" && (
