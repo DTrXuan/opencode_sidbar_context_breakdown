@@ -366,7 +366,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
           {/* Input summary - always visible in compact/expanded */}
           {bd() && bd()!.input > 0 && cp() && (
             <text fg={theme().textMuted}>
-              {" "}Input      {bd()!.input}% ({cp()!.inputTokens.toLocaleString()} tokens)
+              Input {bd()!.input}% ({cp()!.inputTokens.toLocaleString()} tokens)
             </text>
           )}
 
@@ -381,7 +381,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
                 {/* System */}
                 {composition.system && (
                   <text fg={theme().textMuted}>
-                    {"  "}System   {composition.system.pct}% ({composition.system.tokens.toLocaleString()} tokens)
+                    System {composition.system.pct}% ({composition.system.tokens.toLocaleString()} tokens)
                   </text>
                 )}
 
@@ -389,24 +389,24 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
                 {composition.user.total.pct >= 1 && (
                   <>
                     <text fg={theme().textMuted}>
-                      {"  "}User     {composition.user.total.pct}% ({composition.user.total.tokens.toLocaleString()} tokens)
+                      User {composition.user.total.pct}% ({composition.user.total.tokens.toLocaleString()} tokens)
                       {averages && averages.perUser > 0 && ` • avg ${averages.perUser.toLocaleString()}/msg`}
                     </text>
                     {composition.user.text && (
                       <text fg={theme().textMuted}>
-                        {"    "}Text      {composition.user.text.pct}% ({composition.user.text.tokens.toLocaleString()} tokens) •{" "}
+                        Text {composition.user.text.pct}% ({composition.user.text.tokens.toLocaleString()} tokens) •{" "}
                         {composition.user.text.count} msgs
                       </text>
                     )}
                     {composition.user.file && (
                       <text fg={theme().textMuted}>
-                        {"    "}Files     {composition.user.file.pct}% ({composition.user.file.tokens.toLocaleString()} tokens) •{" "}
+                        Files {composition.user.file.pct}% ({composition.user.file.tokens.toLocaleString()} tokens) •{" "}
                         {composition.user.file.count} files
                       </text>
                     )}
                     {composition.user.agent && (
                       <text fg={theme().textMuted}>
-                        {"    "}Agent     {composition.user.agent.pct}% ({composition.user.agent.tokens.toLocaleString()} tokens) •{" "}
+                        Agent {composition.user.agent.pct}% ({composition.user.agent.tokens.toLocaleString()} tokens) •{" "}
                         {composition.user.agent.count} mentions
                       </text>
                     )}
@@ -417,18 +417,18 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
                 {composition.assistant.total.pct >= 1 && (
                   <>
                     <text fg={theme().textMuted}>
-                      {"  "}History  {composition.assistant.total.pct}% ({composition.assistant.total.tokens.toLocaleString()} tokens)
+                      History {composition.assistant.total.pct}% ({composition.assistant.total.tokens.toLocaleString()} tokens)
                       {averages && averages.perAssistant > 0 && ` • avg ${averages.perAssistant.toLocaleString()}/msg`}
                     </text>
                     {composition.assistant.text && (
                       <text fg={theme().textMuted}>
-                        {"    "}Text      {composition.assistant.text.pct}% ({composition.assistant.text.tokens.toLocaleString()} tokens) •{" "}
+                        Text {composition.assistant.text.pct}% ({composition.assistant.text.tokens.toLocaleString()} tokens) •{" "}
                         {composition.assistant.text.count} msgs
                       </text>
                     )}
                     {composition.assistant.reasoning && (
                       <text fg={theme().textMuted}>
-                        {"    "}Reasoning {composition.assistant.reasoning.pct}% ({composition.assistant.reasoning.tokens.toLocaleString()} tokens) •{" "}
+                        Reasoning {composition.assistant.reasoning.pct}% ({composition.assistant.reasoning.tokens.toLocaleString()} tokens) •{" "}
                         {composition.assistant.reasoning.count} msgs
                       </text>
                     )}
@@ -437,16 +437,9 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
 
                 {/* Tools breakdown */}
                 {composition.tool && composition.tool.total.pct >= 1 && (
-                  <>
-                    <text fg={theme().textMuted}>
-                      {"  "}Tools    {composition.tool.total.pct}% ({composition.tool.total.tokens.toLocaleString()} tokens) • {composition.tool.total.count} calls
-                    </text>
-                    {composition.tool.byName.map((t: any) => (
-                      <text fg={theme().textMuted}>
-                        {"    "}{t.name.padEnd(20)} {((t.tokens / composition.inputTokens) * 100).toFixed(0)}% ({t.tokens.toLocaleString()} tokens) • {t.count} calls
-                      </text>
-                    ))}
-                  </>
+                  <text fg={theme().textMuted}>
+                    Tools {composition.tool.total.pct}% ({composition.tool.total.tokens.toLocaleString()} tokens) • {composition.tool.total.count} calls
+                  </text>
                 )}
               </>
             )
@@ -455,22 +448,22 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
           {/* Output, Reasoning, Cache - always visible in compact/expanded */}
           {bd() && bd()!.output > 0 && (
             <text fg={theme().textMuted}>
-              {" "}Output     {bd()!.output}%
+              Output {bd()!.output}%
             </text>
           )}
           {bd() && bd()!.reasoning > 0 && (
             <text fg={theme().textMuted}>
-              {" "}Reasoning  {bd()!.reasoning}%
+              Reasoning {bd()!.reasoning}%
             </text>
           )}
           {bd() && bd()!.cacheRead > 0 && (
             <text fg={theme().textMuted}>
-              {" "}Cache read {bd()!.cacheRead}%
+              Cache read {bd()!.cacheRead}%
             </text>
           )}
           {bd() && bd()!.cacheWrite > 0 && (
             <text fg={theme().textMuted}>
-              {" "}Cache wrt  {bd()!.cacheWrite}%
+              Cache wrt {bd()!.cacheWrite}%
             </text>
           )}
         </>
