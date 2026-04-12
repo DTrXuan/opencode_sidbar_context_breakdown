@@ -90,6 +90,17 @@ tsconfig.json          ← chỉ dùng cho type check local, không ảnh hưở
 ## Lưu ý khi phát triển
 
 - **Không cần rebuild** sau mỗi thay đổi — chỉ cần `mise run sync` rồi restart opencode
+- **QUAN TRỌNG: Phải restart OpenCode** sau khi sync để load .tsx mới. Nếu không restart, plugin sẽ chạy code cũ và có thể bị lỗi hoặc không thấy thay đổi.
 - **Không thêm node_modules** vào thư mục `~/.config/opencode/node_modules/opencode-sidbar-context-breakdown/` — dependencies phải resolve từ thư mục cha
 - **Type errors** với `(part as any)` là chủ ý — `Part` union type không expose hết các trường runtime của từng variant
 - **`plugin_enabled`** trong `tui.json` được merge với KV store runtime của opencode — nếu user đã toggle plugin qua UI, KV store override config file
+
+## Troubleshooting
+
+### Plugin không hoạt động sau khi sync
+
+**Triệu chứng:** Sau khi chạy `mise run sync`, plugin vẫn hiển thị UI cũ hoặc tính năng mới không hoạt động.
+
+**Nguyên nhân:** OpenCode đã load .tsx vào memory khi khởi động. File mới đã được copy nhưng chưa được load lại.
+
+**Giải pháp:** Restart OpenCode hoàn toàn (thoát và mở lại). Hot-reload không được hỗ trợ cho plugins.

@@ -332,8 +332,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
 
   return (
     <box>
-      {/* @ts-expect-error - on:click is supported by OpenTUI but not in types */}
-      <box on:click={toggleMode}>
+      <box onMouseDown={toggleMode}>
         <text fg={theme().text}>
           {mode() === "detail" ? "▼" : "▶"} <b>Context</b>
         </text>

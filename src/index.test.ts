@@ -483,30 +483,39 @@ describe("Edge Cases", () => {
   })
 })
 
-describe("Mode Cycling", () => {
-  test("cycles through modes: expanded → compact → ultra → expanded", () => {
-    let mode = "expanded"
+describe("Mode Toggle", () => {
+  test("toggles between detail and compact modes", () => {
+    let mode = "detail"
     
-    // expanded → compact
-    mode = mode === "expanded" ? "compact" : mode === "compact" ? "ultra" : "expanded"
+    // detail → compact
+    mode = mode === "detail" ? "compact" : "detail"
     expect(mode).toBe("compact")
     
-    // compact → ultra
-    mode = mode === "expanded" ? "compact" : mode === "compact" ? "ultra" : "expanded"
-    expect(mode).toBe("ultra")
-    
-    // ultra → expanded
-    mode = mode === "expanded" ? "compact" : mode === "compact" ? "ultra" : "expanded"
-    expect(mode).toBe("expanded")
+    // compact → detail
+    mode = mode === "detail" ? "compact" : "detail"
+    expect(mode).toBe("detail")
+  })
+
+  test("default mode is detail", () => {
+    const defaultMode = "detail"
+    expect(defaultMode).toBe("detail")
   })
 
   test("mode indicators", () => {
     const getIndicator = (mode: string) => 
-      mode === "expanded" ? "▼" : mode === "compact" ? "▶" : "⊟"
+      mode === "detail" ? "▼" : "▶"
     
-    expect(getIndicator("expanded")).toBe("▼")
+    expect(getIndicator("detail")).toBe("▼")
     expect(getIndicator("compact")).toBe("▶")
-    expect(getIndicator("ultra")).toBe("⊟")
+  })
+
+  test("only accepts valid modes", () => {
+    const validModes = ["detail", "compact"]
+    
+    expect(validModes).toContain("detail")
+    expect(validModes).toContain("compact")
+    expect(validModes).not.toContain("expanded")
+    expect(validModes).not.toContain("ultra")
   })
 })
 
