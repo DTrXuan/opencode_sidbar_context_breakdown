@@ -11,14 +11,12 @@ const money = new Intl.NumberFormat("en-US", {
   currency: "USD",
 })
 
-// ─── Token estimation helpers ────────────────────────────────────────────────
-// The API only returns aggregate input/output/reasoning/cache counts,
-// not a per-role breakdown.  We estimate by counting characters in message
-// parts and dividing by 4 (the widely-used chars-per-token approximation).
+const fmt = new Intl.NumberFormat("en-US")
+
+const fmtNum = (n: number) => fmt.format(n)
 
 const estimateTokens = (chars: number) => Math.ceil(chars / 4)
 
-// Enhanced user part breakdown: text, file, agent
 const charsFromUserPart = (part: Part): { text: number; file: number; agent: number } => {
   if (part.type === "text") return { text: part.text.length, file: 0, agent: 0 }
   if (part.type === "file") return { text: 0, file: (part as any).source?.text?.value?.length ?? 0, agent: 0 }
@@ -26,7 +24,6 @@ const charsFromUserPart = (part: Part): { text: number; file: number; agent: num
   return { text: 0, file: 0, agent: 0 }
 }
 
-// Enhanced assistant part breakdown: text, reasoning, tool (with name)
 const charsFromAssistantPart = (part: Part): {
   text: number
   reasoning: number
@@ -49,15 +46,12 @@ const charsFromAssistantPart = (part: Part): {
   return { text: 0, reasoning: 0, tool: { name: toolName, chars } }
 }
 
-// Truncate tool names to max length
 const truncateName = (name: string, maxLen: number = 20) =>
   name.length > maxLen ? name.slice(0, maxLen - 3) + "..." : name
 
-// ─── View component ──────────────────────────────────────────────────────────
-
 function View(props: { api: TuiPluginApi; session_id: string }) {
   const theme = () => props.api.theme.current
-  const [mode, setMode] = createSignal<"detail" | "compact">("detail") // Default: detail (expanded)
+  const [mode, setMode] = createSignal<"detail" | "compact">("detail")
   const toggleMode = () => {
     setMode(mode() === "detail" ? "compact" : "detail")
   }
@@ -86,15 +80,12 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
     const tokens = t.input + t.output + t.reasoning + t.cache.read + t.cache.write
     const model = props.api.state.provider.find((p) => p.id === last.providerID)?.models[last.modelID]
 
-    // % of context window used
     const pct = (n: number) => (tokens > 0 ? Math.round((n / tokens) * 100) : 0)
 
-    // Estimate per-role composition of the input token budget
     const systemPrompt = messages
       .findLast((m): m is UserMessage => m.role === "user" && !!(m as any).system)
       ?.system as string | undefined
 
-    // Enhanced counts with detailed breakdown
     const counts = messages.reduce(
       (acc, m) => {
         const parts = props.api.state.part(m.id) as Part[]
@@ -146,7 +137,6 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
             },
           )
 
-          // Merge tool maps
           breakdown.tools.forEach((value, key) => {
             const existing = acc.tools.get(key) ?? { count: 0, chars: 0 }
             acc.tools.set(key, {
@@ -175,7 +165,6 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
       },
     )
 
-    // Estimate tokens for all components
     const est = {
       system: estimateTokens(counts.system),
       user: {
@@ -202,10 +191,8 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
       Array.from(est.tools.values()).reduce((sum, t) => sum + t.tokens, 0)
 
     const input = t.input
-    // Scale down proportionally if our estimate exceeds actual input tokens
     const scale = estTotal > input && estTotal > 0 ? input / estTotal : 1
 
-    // Use Math.round instead of Math.floor for better accuracy
     const scaled = {
       system: Math.round(est.system * scale),
       user: {
@@ -224,18 +211,15 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
 
     const iPct = (n: number) => (input > 0 ? Math.round((n / input) * 100) : 0)
 
-    // Calculate totals
     const userTotal = scaled.user.text + scaled.user.file + scaled.user.agent
     const assistantTotal = scaled.assistant.text + scaled.assistant.reasoning
     const toolsTotal = Array.from(scaled.tools.values()).reduce((sum, t) => sum + t.tokens, 0)
     const totalToolCalls = Array.from(scaled.tools.values()).reduce((sum, t) => sum + t.count, 0)
 
-    // Calculate averages
     const avgPerMsg = messages.length > 0 ? Math.round(input / messages.length) : 0
     const avgPerUser = counts.user.count > 0 ? Math.round(userTotal / counts.user.count) : 0
     const avgPerAssistant = counts.assistant.count > 0 ? Math.round(assistantTotal / counts.assistant.count) : 0
 
-    // Count specific part types
     const fileCount = messages.reduce((sum, m) => {
       if (m.role !== "user") return sum
       const parts = props.api.state.part(m.id) as Part[]
@@ -254,9 +238,8 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
       return sum + parts.filter((p) => p.type === "reasoning").length
     }, 0)
 
-    // Prepare top 3 tools + "other"
     const sortedTools = Array.from(scaled.tools)
-      .map(([name, data]) => ({ name, count: data.count, tokens: data.tokens }))
+      .map(([name, data]) => ({ name, count: data.count, tokens: data.tokens, pct: iPct(data.tokens) }))
       .sort((a, b) => b.tokens - a.tokens)
 
     const topTools = sortedTools.slice(0, 3)
@@ -267,6 +250,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
         name: "other",
         count: otherTools.reduce((sum, t) => sum + t.count, 0),
         tokens: otherTools.reduce((sum, t) => sum + t.tokens, 0),
+        pct: iPct(otherTools.reduce((sum, t) => sum + t.tokens, 0)),
       })
     }
 
@@ -330,161 +314,127 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   const mc = () => state().messageCount
   const avg = () => state().averages
 
+  const mkBar = (pct: number, len: number = 8) => {
+    const filled = Math.round((pct / 100) * len)
+    return "█".repeat(filled) + "░".repeat(len - filled)
+  }
+
   return (
     <box>
       <box onMouseDown={toggleMode}>
         <text fg={theme().text}>
-          {mode() === "detail" ? "▼" : "▶"} <b>Context management</b>
+          {mode() === "detail" ? "▼" : "▷"} <b>Context</b> {mkBar(state().percent ?? 0)}
         </text>
-        <text fg={theme().textMuted}>
-          {state().tokens.toLocaleString()} tokens ({state().percent ?? 0}% used)
-          {mc() && (
-            <>
-              {" • "}
-              {mc()!.total} msgs
-              {mode() === "detail" && ` (${mc()!.user} user, ${mc()!.assistant} assistant)`}
-              {avg() && ` • avg ${avg()!.perMessage.toLocaleString()}/msg`}
-            </>
-          )}
+        <text fg={theme().text}>
+          {fmtNum(state().tokens)} tokens ({state().percent ?? 0}%)
         </text>
+        {mc() && (
+          <text fg={theme().textMuted}>
+            {mc()!.total} msgs ({mc()!.user}U / {mc()!.assistant}A)
+          </text>
+        )}
+        {avg() && (
+          <text fg={theme().textMuted}>
+            avg {fmtNum(avg()!.perMessage)}/msg
+          </text>
+        )}
       </box>
 
-       {/* Compact mode: always show Input/Output/Reasoning/Cache percentages */}
-       {mode() === "compact" && bd() && (
-         <>
-           <text fg={theme().textMuted}>
-             Input {bd()!.input}%
-           </text>
-           <text fg={theme().textMuted}>
-             Output {bd()!.output}%
-           </text>
-           <text fg={theme().textMuted}>
-             Reasoning {bd()!.reasoning}%
-           </text>
-           <text fg={theme().textMuted}>
-             Cache read {bd()!.cacheRead}%
-           </text>
-           <text fg={theme().textMuted}>
-             Cache wrt {bd()!.cacheWrite}%
-           </text>
-         </>
-       )}
+      {mode() === "compact" && cp() && (
+        <>
+          {cp()!.system && (
+            <text fg="#5af">Sys {cp()!.system!.pct}% {fmtNum(cp()!.system!.tokens)}</text>
+          )}
+          <text fg="#adf">Usr {cp()!.user.total.pct}% {fmtNum(cp()!.user.total.tokens)}</text>
+          {cp()!.assistant.total.pct >= 1 && (
+            <text fg="#fda">Hst {cp()!.assistant.total.pct}% {fmtNum(cp()!.assistant.total.tokens)}</text>
+          )}
+          {cp()!.tool && cp()!.tool!.total.pct >= 1 && (
+            <text fg="#daf">Tls {cp()!.tool!.total.pct}% {fmtNum(cp()!.tool!.total.tokens)}</text>
+          )}
+        </>
+      )}
 
-      {/* Detail mode: show full breakdown */}
       {mode() === "detail" && (
         <>
-          {/* Input summary with token count */}
           {bd() && bd()!.input > 0 && cp() && (
-            <text fg={theme().textMuted}>
-              Input {bd()!.input}% ({cp()!.inputTokens.toLocaleString()} tokens)
+            <text fg={theme().text}>
+              In {bd()!.input}% {fmtNum(cp()!.inputTokens)}
             </text>
           )}
 
-          {/* Detailed breakdown - System, User, History, Tools */}
           {(() => {
             const composition = cp()
             const averages = avg()
             if (!composition) return null
-            
+
             return (
               <>
-                {/* System */}
                 {composition.system && (
-                  <text fg={theme().textMuted}>
-                    System {composition.system.pct}% ({composition.system.tokens.toLocaleString()} tokens)
-                  </text>
+                  <text fg="#5af">System {composition.system.pct}% {fmtNum(composition.system.tokens)}</text>
                 )}
 
-                {/* User breakdown */}
                 {composition.user.total.pct >= 1 && (
                   <>
-                    <text fg={theme().textMuted}>
-                      User {composition.user.total.pct}% ({composition.user.total.tokens.toLocaleString()} tokens)
-                      {averages && averages.perUser > 0 && ` • avg ${averages.perUser.toLocaleString()}/msg`}
-                    </text>
+                    <text fg="#adf">User {composition.user.total.pct}% {fmtNum(composition.user.total.tokens)}</text>
                     {composition.user.text && (
-                      <text fg={theme().textMuted}>
-                        Text {composition.user.text.pct}% ({composition.user.text.tokens.toLocaleString()} tokens) •{" "}
-                        {composition.user.text.count} msgs
-                      </text>
+                      <text fg={theme().textMuted}>  text {composition.user.text.pct}% {fmtNum(composition.user.text.tokens)} ({composition.user.text.count})</text>
                     )}
                     {composition.user.file && (
-                      <text fg={theme().textMuted}>
-                        Files {composition.user.file.pct}% ({composition.user.file.tokens.toLocaleString()} tokens) •{" "}
-                        {composition.user.file.count} files
-                      </text>
+                      <text fg={theme().textMuted}>  file {composition.user.file.pct}% {fmtNum(composition.user.file.tokens)} ({composition.user.file.count})</text>
                     )}
                     {composition.user.agent && (
-                      <text fg={theme().textMuted}>
-                        Agent {composition.user.agent.pct}% ({composition.user.agent.tokens.toLocaleString()} tokens) •{" "}
-                        {composition.user.agent.count} mentions
-                      </text>
+                      <text fg={theme().textMuted}>  agent {composition.user.agent.pct}% {fmtNum(composition.user.agent.tokens)}</text>
                     )}
                   </>
                 )}
 
-                {/* History breakdown */}
                 {composition.assistant.total.pct >= 1 && (
                   <>
-                    <text fg={theme().textMuted}>
-                      History {composition.assistant.total.pct}% ({composition.assistant.total.tokens.toLocaleString()} tokens)
-                      {averages && averages.perAssistant > 0 && ` • avg ${averages.perAssistant.toLocaleString()}/msg`}
-                    </text>
+                    <text fg="#fda">History {composition.assistant.total.pct}% {fmtNum(composition.assistant.total.tokens)}</text>
                     {composition.assistant.text && (
-                      <text fg={theme().textMuted}>
-                        Text {composition.assistant.text.pct}% ({composition.assistant.text.tokens.toLocaleString()} tokens) •{" "}
-                        {composition.assistant.text.count} msgs
-                      </text>
+                      <text fg={theme().textMuted}>  text {composition.assistant.text.pct}% {fmtNum(composition.assistant.text.tokens)} ({composition.assistant.text.count})</text>
                     )}
                     {composition.assistant.reasoning && (
-                      <text fg={theme().textMuted}>
-                        Reasoning {composition.assistant.reasoning.pct}% ({composition.assistant.reasoning.tokens.toLocaleString()} tokens) •{" "}
-                        {composition.assistant.reasoning.count} msgs
-                      </text>
+                      <text fg={theme().textMuted}>  thnk {composition.assistant.reasoning.pct}% {fmtNum(composition.assistant.reasoning.tokens)}</text>
                     )}
                   </>
                 )}
 
-                {/* Tools breakdown */}
                 {composition.tool && composition.tool.total.pct >= 1 && (
-                  <text fg={theme().textMuted}>
-                    Tools {composition.tool.total.pct}% ({composition.tool.total.tokens.toLocaleString()} tokens) • {composition.tool.total.count} calls
-                  </text>
+                  <>
+                    <text fg="#daf">Tools {composition.tool.total.pct}% {fmtNum(composition.tool.total.tokens)} ({composition.tool.total.count}calls)</text>
+                    {composition.tool.byName.map((tool) => (
+                      <text fg={theme().textMuted}>  {tool.name} {tool.pct}% {fmtNum(tool.tokens)} ({tool.count})</text>
+                    ))}
+                  </>
                 )}
               </>
             )
           })()}
 
-          {/* Output, Reasoning, Cache */}
-          {bd() && bd()!.output > 0 && (
-            <text fg={theme().textMuted}>
-              Output {bd()!.output}%
-            </text>
+          {(bd()!.output > 0 || bd()!.reasoning > 0 || bd()!.cacheRead > 0 || bd()!.cacheWrite > 0) && (
+            <text fg={theme().textMuted}>---</text>
           )}
-          {bd() && bd()!.reasoning > 0 && (
-            <text fg={theme().textMuted}>
-              Reasoning {bd()!.reasoning}%
-            </text>
+          {bd()!.output > 0 && (
+            <text fg={theme().textMuted}>Out {bd()!.output}%</text>
           )}
-          {bd() && bd()!.cacheRead > 0 && (
-            <text fg={theme().textMuted}>
-              Cache read {bd()!.cacheRead}%
-            </text>
+          {bd()!.reasoning > 0 && (
+            <text fg={theme().textMuted}>Thnk {bd()!.reasoning}%</text>
           )}
-          {bd() && bd()!.cacheWrite > 0 && (
-            <text fg={theme().textMuted}>
-              Cache wrt {bd()!.cacheWrite}%
-            </text>
+          {bd()!.cacheRead > 0 && (
+            <text fg={theme().textMuted}>CacheR {bd()!.cacheRead}%</text>
+          )}
+          {bd()!.cacheWrite > 0 && (
+            <text fg={theme().textMuted}>CacheW {bd()!.cacheWrite}%</text>
           )}
         </>
       )}
 
-      <text fg={theme().textMuted}>{money.format(cost())} spent</text>
+      <text fg={theme().textMuted}>{money.format(cost())}</text>
     </box>
   )
 }
-
-// ─── Plugin registration ─────────────────────────────────────────────────────
 
 const tui: TuiPlugin = async (api) => {
   api.slots.register({
