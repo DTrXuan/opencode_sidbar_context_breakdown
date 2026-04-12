@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#MISE description="Build the plugin"
+#MISE sources=["src/**/*"]
+#MISE outputs=["dist/index.js"]
+
+bun build ./src/index.tsx \
+  --outdir dist \
+  --target bun \
+  --external "@opencode-ai/plugin" \
+  --external "@opencode-ai/sdk" \
+  --external "solid-js" \
+  --external "@opentui/core" \
+  --external "@opentui/solid"

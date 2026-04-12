@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#MISE description="Build with watch mode"
+#MISE watch=["src/**/*"]
+
+bun build ./src/index.tsx \
+  --outdir dist \
+  --target bun \
+  --sourcemap=inline \
+  --external "@opencode-ai/plugin" \
+  --external "@opencode-ai/sdk" \
+  --external "solid-js" \
+  --external "@opentui/core" \
+  --external "@opentui/solid" \
+  --watch

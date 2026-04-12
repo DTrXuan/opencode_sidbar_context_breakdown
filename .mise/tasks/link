@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#MISE description="Link built plugin to opencode config"
+
+PLUGIN_DIR="$HOME/.config/opencode/plugin"
+mkdir -p "$PLUGIN_DIR"
+ln -sf "$PWD/dist/index.js" "$PLUGIN_DIR/opencode-sidbar-context-breakdown.js"
+echo "Linked: $PLUGIN_DIR/opencode-sidbar-context-breakdown.js -> $PWD/dist/index.js"
+ls -al "$PLUGIN_DIR/"
