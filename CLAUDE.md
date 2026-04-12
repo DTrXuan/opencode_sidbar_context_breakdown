@@ -95,6 +95,39 @@ tsconfig.json          ← chỉ dùng cho type check local, không ảnh hưở
 - **Type errors** với `(part as any)` là chủ ý — `Part` union type không expose hết các trường runtime của từng variant
 - **`plugin_enabled`** trong `tui.json` được merge với KV store runtime của opencode — nếu user đã toggle plugin qua UI, KV store override config file
 
+## OpenTUI Event Handlers
+
+**QUAN TRỌNG:** OpenTUI Box components không hỗ trợ `on:click` directive của Solid.js.
+
+### Sự khác biệt với Solid.js
+
+OpenTUI Box không extend EventEmitter, nên không thể dùng `on:` directive cho custom events. Thay vào đó, dùng property-based mouse handlers:
+
+```tsx
+// ❌ KHÔNG hoạt động
+<box on:click={handler}>
+
+// ✅ Đúng cách
+<box onMouseDown={handler}>
+```
+
+### Mouse Event Handlers
+
+- `onMouseDown` - click-like interactions
+- `onMouseUp` - mouse release
+- `onMouseMove` - mouse movement
+- `onMouseEnter` / `onMouseLeave` - hover states
+
+### Yêu cầu
+
+Mouse events phải được enable trong `tui.json`:
+
+```json
+{
+  "mouse": true
+}
+```
+
 ## Troubleshooting
 
 ### Plugin không hoạt động sau khi sync
@@ -104,3 +137,11 @@ tsconfig.json          ← chỉ dùng cho type check local, không ảnh hưở
 **Nguyên nhân:** OpenCode đã load .tsx vào memory khi khởi động. File mới đã được copy nhưng chưa được load lại.
 
 **Giải pháp:** Restart OpenCode hoàn toàn (thoát và mở lại). Hot-reload không được hỗ trợ cho plugins.
+
+### Click events không hoạt động
+
+**Triệu chứng:** `on:click={handler}` không trigger khi click vào Box component.
+
+**Nguyên nhân:** OpenTUI Box không hỗ trợ EventEmitter-based events. Box chỉ hỗ trợ property-based mouse handlers.
+
+**Giải pháp:** Dùng `onMouseDown={handler}` thay vì `on:click={handler}`. Đảm bảo `"mouse": true` trong tui.json.
