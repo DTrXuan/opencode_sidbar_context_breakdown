@@ -1,11 +1,38 @@
 # opencode-sidbar-context-breakdown
 
-OpenCode TUI plugin thay thế `internal:sidebar-context`, hiển thị chi tiết **% thành phần** của context window theo từng vai trò.
+OpenCode TUI plugin thay thế `internal:sidebar-context`, hiển thị chi tiết **% thành phần** của context window theo từng vai trò với **3 chế độ hiển thị**.
+
+## Tính năng
+
+- **3 chế độ hiển thị:** ultra (tối giản) | compact (vừa phải) | expanded (đầy đủ)
+- **Click để chuyển chế độ:** Click vào tiêu đề "Context" để cycle qua các chế độ
+- **Thống kê chi tiết:** Số lượng message, trung bình tokens/message, top 3 tools
+- **Lọc thông minh:** Ẩn thành phần < 1% để giảm nhiễu
+- **Token estimation chính xác:** Ước tính per-role từ aggregate API tokens
 
 ## Hiển thị
 
+### Expanded Mode (mặc định)
 ```
-Context
+Context [expanded]
+85,432 tokens (42% used)
+  Input      78% (45 msgs, avg 1,478/msg)
+    System   45% (1 msg, 38,444 tokens)
+    User     18% (22 msgs, avg 680/msg)
+    History  28% (22 msgs, avg 1,058/msg)
+    Tools     9% (15 calls)
+      tavily_search    4,200 tokens (3 calls)
+      memory_search    2,100 tokens (5 calls)
+      read            1,800 tokens (7 calls)
+      other (5 tools) 1,200 tokens
+  Output     15% (12,800 tokens)
+  Cache read  7% (5,980 tokens)
+$0.12 spent
+```
+
+### Compact Mode
+```
+Context [compact]
 85,432 tokens (42% used)
   Input      78%
     System   45%
@@ -17,20 +44,53 @@ Context
 $0.12 spent
 ```
 
-| Dòng | Ý nghĩa |
-|------|---------|
+### Ultra Mode
+```
+Context [ultra]
+85,432 tokens (42%)
+ In  78%
+  Sys 45%
+  Usr 18%
+  His 28%
+  Tls  9%
+ Out 15%
+ Cch  7%
+$0.12
+```
+
+## Giải thích các trường
+
+| Trường | Ý nghĩa |
+|--------|---------|
 | `N tokens (X% used)` | Tổng tokens của lần gọi cuối và % so với giới hạn context của model |
-| `Input X%` | % input tokens trong tổng |
-| `  System X%` | Ước tính % đến từ system prompt |
-| `  User X%` | Ước tính % đến từ các user message |
-| `  History X%` | Ước tính % đến từ lịch sử assistant message |
-| `  Tools X%` | Ước tính % đến từ tool call inputs/outputs |
-| `Output X%` | % output tokens (text model sinh ra) |
+| `Input X%` | % input tokens trong tổng (expanded: + số message, avg tokens/msg) |
+| `  System X%` | Ước tính % đến từ system prompt (expanded: + số message, tổng tokens) |
+| `  User X%` | Ước tính % đến từ các user message (expanded: + số message, avg tokens/msg) |
+| `  History X%` | Ước tính % đến từ lịch sử assistant message (expanded: + số message, avg tokens/msg) |
+| `  Tools X%` | Ước tính % đến từ tool call inputs/outputs (expanded: + số calls, top 3 tools) |
+| `Output X%` | % output tokens (text model sinh ra) (expanded: + tổng tokens) |
 | `Reasoning X%` | % reasoning/thinking tokens (model hỗ trợ) |
-| `Cache read/wrt X%` | % prompt cache tokens |
+| `Cache read/wrt X%` | % prompt cache tokens (expanded: + tổng tokens) |
 | `$X.XX spent` | Tổng chi phí của session |
 
-> **Lưu ý:** System / User / History / Tools là **ước tính** vì API chỉ trả về tổng input tokens, không phân tách theo vai trò. Cách tính: đếm ký tự trong message parts ÷ 4 ≈ tokens, sau đó scale tỉ lệ về đúng tổng thực tế. Đây là cùng phương pháp với tab Context trong opencode app chính.
+### Chế độ hiển thị
+
+- **Ultra:** Tối giản nhất, dùng viết tắt (Sys/Usr/His/Tls), indentation 1/2/4/6 spaces
+- **Compact:** Vừa phải, chỉ hiển thị % không có thống kê chi tiết
+- **Expanded:** Đầy đủ, hiển thị số message, avg tokens/msg, top 3 tools với tokens
+
+**Click vào "Context [mode]"** để cycle qua các chế độ.
+
+### Token Estimation
+
+System / User / History / Tools là **ước tính** vì API chỉ trả về tổng input tokens, không phân tách theo vai trò. 
+
+**Cách tính:**
+1. Đếm ký tự trong message parts ÷ 4 ≈ tokens
+2. Scale tỉ lệ về đúng tổng thực tế nếu estimate > actual
+3. Dùng `Math.round` cho độ chính xác cao
+
+Đây là cùng phương pháp với tab Context trong opencode app chính.
 
 ## Cài đặt thủ công (local)
 
