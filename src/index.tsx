@@ -57,8 +57,13 @@ const truncateName = (name: string, maxLen: number = 20) =>
 
 function View(props: { api: TuiPluginApi; session_id: string }) {
   const theme = () => props.api.theme.current
-  const [expanded, setExpanded] = createSignal(true) // Default: expanded
-  const toggleExpanded = () => setExpanded(!expanded())
+  const [mode, setMode] = createSignal<"ultra" | "compact" | "expanded">("expanded") // Default: expanded
+  const cycleMode = () => {
+    const current = mode()
+    if (current === "expanded") setMode("compact")
+    else if (current === "compact") setMode("ultra")
+    else setMode("expanded")
+  }
 
   const msg = createMemo(() => props.api.state.session.messages(props.session_id))
   const cost = createMemo(() =>
@@ -330,132 +335,145 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
 
   return (
     <box>
-      <text fg={theme().text}>
-        <b>Context</b>
-      </text>
-      <text fg={theme().textMuted}>
-        {state().tokens.toLocaleString()} tokens ({state().percent ?? 0}% used)
-        {mc() && (
-          <>
-            {" • "}
-            {mc()!.total} msgs
-            {expanded() && ` (${mc()!.user} user, ${mc()!.assistant} assistant)`}
-            {avg() && ` • avg ${avg()!.perMessage.toLocaleString()}/msg`}
-          </>
-        )}
-      </text>
-
-      {/* Input summary - always visible */}
-      {bd() && bd()!.input > 0 && cp() && (
+      {/* @ts-expect-error - on:click is supported by OpenTUI but not in types */}
+      <box on:click={cycleMode}>
+        <text fg={theme().text}>
+          {mode() === "expanded" ? "▼" : mode() === "compact" ? "▶" : "⊟"} <b>Context</b>
+        </text>
         <text fg={theme().textMuted}>
-          {"  "}Input      {bd()!.input}% ({cp()!.inputTokens.toLocaleString()} tokens)
+          {state().tokens.toLocaleString()} tokens ({state().percent ?? 0}% used)
+          {mc() && (
+            <>
+              {" • "}
+              {mc()!.total} msgs
+              {mode() === "expanded" && ` (${mc()!.user} user, ${mc()!.assistant} assistant)`}
+              {avg() && ` • avg ${avg()!.perMessage.toLocaleString()}/msg`}
+            </>
+          )}
+        </text>
+      </box>
+
+      {/* Ultra-compact mode: single line */}
+      {mode() === "ultra" && bd() && (
+        <text fg={theme().textMuted}>
+          Input {bd()!.input}% • Output {bd()!.output}% • Cache {bd()!.cacheRead + bd()!.cacheWrite}%
         </text>
       )}
 
-      {/* Detailed breakdown - only when expanded */}
-      {expanded() && (() => {
-        const composition = cp()
-        const averages = avg()
-        if (!composition) return null
-        
-        return (
-          <>
-            {/* System */}
-            {composition.system && (
-              <text fg={theme().textMuted}>
-                {"      "}System   {composition.system.pct}% ({composition.system.tokens.toLocaleString()} tokens)
-              </text>
-            )}
+      {/* Compact/Expanded modes */}
+      {mode() !== "ultra" && (
+        <>
+          {/* Input summary - always visible in compact/expanded */}
+          {bd() && bd()!.input > 0 && cp() && (
+            <text fg={theme().textMuted}>
+              {" "}Input      {bd()!.input}% ({cp()!.inputTokens.toLocaleString()} tokens)
+            </text>
+          )}
 
-            {/* User breakdown */}
-            {composition.user.total.pct >= 1 && (
+          {/* Detailed breakdown - only when expanded */}
+          {mode() === "expanded" && (() => {
+            const composition = cp()
+            const averages = avg()
+            if (!composition) return null
+            
+            return (
               <>
-                <text fg={theme().textMuted}>
-                  {"      "}User     {composition.user.total.pct}% ({composition.user.total.tokens.toLocaleString()} tokens)
-                  {averages && averages.perUser > 0 && ` • avg ${averages.perUser.toLocaleString()}/msg`}
-                </text>
-                {composition.user.text && (
+                {/* System */}
+                {composition.system && (
                   <text fg={theme().textMuted}>
-                    {"        "}Text      {composition.user.text.pct}% ({composition.user.text.tokens.toLocaleString()} tokens) •{" "}
-                    {composition.user.text.count} msgs
+                    {"  "}System   {composition.system.pct}% ({composition.system.tokens.toLocaleString()} tokens)
                   </text>
                 )}
-                {composition.user.file && (
-                  <text fg={theme().textMuted}>
-                    {"        "}Files     {composition.user.file.pct}% ({composition.user.file.tokens.toLocaleString()} tokens) •{" "}
-                    {composition.user.file.count} files
-                  </text>
+
+                {/* User breakdown */}
+                {composition.user.total.pct >= 1 && (
+                  <>
+                    <text fg={theme().textMuted}>
+                      {"  "}User     {composition.user.total.pct}% ({composition.user.total.tokens.toLocaleString()} tokens)
+                      {averages && averages.perUser > 0 && ` • avg ${averages.perUser.toLocaleString()}/msg`}
+                    </text>
+                    {composition.user.text && (
+                      <text fg={theme().textMuted}>
+                        {"    "}Text      {composition.user.text.pct}% ({composition.user.text.tokens.toLocaleString()} tokens) •{" "}
+                        {composition.user.text.count} msgs
+                      </text>
+                    )}
+                    {composition.user.file && (
+                      <text fg={theme().textMuted}>
+                        {"    "}Files     {composition.user.file.pct}% ({composition.user.file.tokens.toLocaleString()} tokens) •{" "}
+                        {composition.user.file.count} files
+                      </text>
+                    )}
+                    {composition.user.agent && (
+                      <text fg={theme().textMuted}>
+                        {"    "}Agent     {composition.user.agent.pct}% ({composition.user.agent.tokens.toLocaleString()} tokens) •{" "}
+                        {composition.user.agent.count} mentions
+                      </text>
+                    )}
+                  </>
                 )}
-                {composition.user.agent && (
-                  <text fg={theme().textMuted}>
-                    {"        "}Agent     {composition.user.agent.pct}% ({composition.user.agent.tokens.toLocaleString()} tokens) •{" "}
-                    {composition.user.agent.count} mentions
-                  </text>
+
+                {/* History breakdown */}
+                {composition.assistant.total.pct >= 1 && (
+                  <>
+                    <text fg={theme().textMuted}>
+                      {"  "}History  {composition.assistant.total.pct}% ({composition.assistant.total.tokens.toLocaleString()} tokens)
+                      {averages && averages.perAssistant > 0 && ` • avg ${averages.perAssistant.toLocaleString()}/msg`}
+                    </text>
+                    {composition.assistant.text && (
+                      <text fg={theme().textMuted}>
+                        {"    "}Text      {composition.assistant.text.pct}% ({composition.assistant.text.tokens.toLocaleString()} tokens) •{" "}
+                        {composition.assistant.text.count} msgs
+                      </text>
+                    )}
+                    {composition.assistant.reasoning && (
+                      <text fg={theme().textMuted}>
+                        {"    "}Reasoning {composition.assistant.reasoning.pct}% ({composition.assistant.reasoning.tokens.toLocaleString()} tokens) •{" "}
+                        {composition.assistant.reasoning.count} msgs
+                      </text>
+                    )}
+                  </>
+                )}
+
+                {/* Tools breakdown */}
+                {composition.tool && composition.tool.total.pct >= 1 && (
+                  <>
+                    <text fg={theme().textMuted}>
+                      {"  "}Tools    {composition.tool.total.pct}% ({composition.tool.total.tokens.toLocaleString()} tokens) • {composition.tool.total.count} calls
+                    </text>
+                    {composition.tool.byName.map((t: any) => (
+                      <text fg={theme().textMuted}>
+                        {"    "}{t.name.padEnd(20)} {((t.tokens / composition.inputTokens) * 100).toFixed(0)}% ({t.tokens.toLocaleString()} tokens) • {t.count} calls
+                      </text>
+                    ))}
+                  </>
                 )}
               </>
-            )}
+            )
+          })()}
 
-            {/* History breakdown */}
-            {composition.assistant.total.pct >= 1 && (
-              <>
-                <text fg={theme().textMuted}>
-                  {"      "}History  {composition.assistant.total.pct}% ({composition.assistant.total.tokens.toLocaleString()} tokens)
-                  {averages && averages.perAssistant > 0 && ` • avg ${averages.perAssistant.toLocaleString()}/msg`}
-                </text>
-                {composition.assistant.text && (
-                  <text fg={theme().textMuted}>
-                    {"        "}Text      {composition.assistant.text.pct}% ({composition.assistant.text.tokens.toLocaleString()} tokens) •{" "}
-                    {composition.assistant.text.count} msgs
-                  </text>
-                )}
-                {composition.assistant.reasoning && (
-                  <text fg={theme().textMuted}>
-                    {"        "}Reasoning {composition.assistant.reasoning.pct}% ({composition.assistant.reasoning.tokens.toLocaleString()}{" "}
-                    tokens) • {composition.assistant.reasoning.count} msgs
-                  </text>
-                )}
-              </>
-            )}
-
-            {/* Tools breakdown - top 3 + other */}
-            {composition.tool && (
-              <>
-                <text fg={theme().textMuted}>
-                  {"      "}Tools    {composition.tool.total.pct}% ({composition.tool.total.tokens.toLocaleString()} tokens) •{" "}
-                  {composition.tool.total.count} calls
-                </text>
-                {composition.tool.byName.map((tool) => (
-                  <text fg={theme().textMuted}>
-                    {"        "}
-                    {tool.name}: {tool.count} calls, {tool.tokens.toLocaleString()} tokens
-                  </text>
-                ))}
-              </>
-            )}
-          </>
-        )
-      })()}
-
-      {/* Output, Reasoning, Cache - always visible */}
-      {bd() && bd()!.output > 0 && (
-        <text fg={theme().textMuted}>
-          {"  "}Output     {bd()!.output}%
-        </text>
-      )}
-      {bd() && bd()!.reasoning > 0 && (
-        <text fg={theme().textMuted}>
-          {"  "}Reasoning  {bd()!.reasoning}%
-        </text>
-      )}
-      {bd() && bd()!.cacheRead > 0 && (
-        <text fg={theme().textMuted}>
-          {"  "}Cache read {bd()!.cacheRead}%
-        </text>
-      )}
-      {bd() && bd()!.cacheWrite > 0 && (
-        <text fg={theme().textMuted}>
-          {"  "}Cache wrt  {bd()!.cacheWrite}%
-        </text>
+          {/* Output, Reasoning, Cache - always visible in compact/expanded */}
+          {bd() && bd()!.output > 0 && (
+            <text fg={theme().textMuted}>
+              {" "}Output     {bd()!.output}%
+            </text>
+          )}
+          {bd() && bd()!.reasoning > 0 && (
+            <text fg={theme().textMuted}>
+              {" "}Reasoning  {bd()!.reasoning}%
+            </text>
+          )}
+          {bd() && bd()!.cacheRead > 0 && (
+            <text fg={theme().textMuted}>
+              {" "}Cache read {bd()!.cacheRead}%
+            </text>
+          )}
+          {bd() && bd()!.cacheWrite > 0 && (
+            <text fg={theme().textMuted}>
+              {" "}Cache wrt  {bd()!.cacheWrite}%
+            </text>
+          )}
+        </>
       )}
 
       <text fg={theme().textMuted}>{money.format(cost())} spent</text>

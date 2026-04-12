@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#MISE description="Sync source to opencode node_modules (no build needed)"
+
+DEST="$HOME/.config/opencode/node_modules/opencode-sidbar-context-breakdown"
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+mkdir -p "$DEST/src"
+cp "$SRC/src/index.tsx" "$DEST/src/index.tsx"
+cp "$SRC/package.json"  "$DEST/package.json"
+
+echo "Synced to $DEST"
