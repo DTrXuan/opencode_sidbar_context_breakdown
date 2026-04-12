@@ -57,12 +57,9 @@ const truncateName = (name: string, maxLen: number = 20) =>
 
 function View(props: { api: TuiPluginApi; session_id: string }) {
   const theme = () => props.api.theme.current
-  const [mode, setMode] = createSignal<"ultra" | "compact" | "expanded">("expanded") // Default: expanded
-  const cycleMode = () => {
-    const current = mode()
-    if (current === "expanded") setMode("compact")
-    else if (current === "compact") setMode("ultra")
-    else setMode("expanded")
+  const [mode, setMode] = createSignal<"detail" | "compact">("detail") // Default: detail (expanded)
+  const toggleMode = () => {
+    setMode(mode() === "detail" ? "compact" : "detail")
   }
 
   const msg = createMemo(() => props.api.state.session.messages(props.session_id))
@@ -336,9 +333,9 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   return (
     <box>
       {/* @ts-expect-error - on:click is supported by OpenTUI but not in types */}
-      <box on:click={cycleMode}>
+      <box on:click={toggleMode}>
         <text fg={theme().text}>
-          {mode() === "expanded" ? "▼" : mode() === "compact" ? "▶" : "⊟"} <b>Context</b>
+          {mode() === "detail" ? "▼" : "▶"} <b>Context</b>
         </text>
         <text fg={theme().textMuted}>
           {state().tokens.toLocaleString()} tokens ({state().percent ?? 0}% used)
@@ -346,32 +343,56 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
             <>
               {" • "}
               {mc()!.total} msgs
-              {mode() === "expanded" && ` (${mc()!.user} user, ${mc()!.assistant} assistant)`}
+              {mode() === "detail" && ` (${mc()!.user} user, ${mc()!.assistant} assistant)`}
               {avg() && ` • avg ${avg()!.perMessage.toLocaleString()}/msg`}
             </>
           )}
         </text>
       </box>
 
-      {/* Ultra-compact mode: single line */}
-      {mode() === "ultra" && bd() && (
-        <text fg={theme().textMuted}>
-          Input {bd()!.input}% • Output {bd()!.output}% • Cache {bd()!.cacheRead + bd()!.cacheWrite}%
-        </text>
+      {/* Compact mode: only show Input/Output/Reasoning/Cache percentages */}
+      {mode() === "compact" && bd() && (
+        <>
+          {bd()!.input > 0 && (
+            <text fg={theme().textMuted}>
+              Input {bd()!.input}%
+            </text>
+          )}
+          {bd()!.output > 0 && (
+            <text fg={theme().textMuted}>
+              Output {bd()!.output}%
+            </text>
+          )}
+          {bd()!.reasoning > 0 && (
+            <text fg={theme().textMuted}>
+              Reasoning {bd()!.reasoning}%
+            </text>
+          )}
+          {bd()!.cacheRead > 0 && (
+            <text fg={theme().textMuted}>
+              Cache read {bd()!.cacheRead}%
+            </text>
+          )}
+          {bd()!.cacheWrite > 0 && (
+            <text fg={theme().textMuted}>
+              Cache wrt {bd()!.cacheWrite}%
+            </text>
+          )}
+        </>
       )}
 
-      {/* Compact/Expanded modes */}
-      {mode() !== "ultra" && (
+      {/* Detail mode: show full breakdown */}
+      {mode() === "detail" && (
         <>
-          {/* Input summary - always visible in compact/expanded */}
+          {/* Input summary with token count */}
           {bd() && bd()!.input > 0 && cp() && (
             <text fg={theme().textMuted}>
               Input {bd()!.input}% ({cp()!.inputTokens.toLocaleString()} tokens)
             </text>
           )}
 
-          {/* Detailed breakdown - only when expanded */}
-          {mode() === "expanded" && (() => {
+          {/* Detailed breakdown - System, User, History, Tools */}
+          {(() => {
             const composition = cp()
             const averages = avg()
             if (!composition) return null
@@ -445,7 +466,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
             )
           })()}
 
-          {/* Output, Reasoning, Cache - always visible in compact/expanded */}
+          {/* Output, Reasoning, Cache */}
           {bd() && bd()!.output > 0 && (
             <text fg={theme().textMuted}>
               Output {bd()!.output}%
