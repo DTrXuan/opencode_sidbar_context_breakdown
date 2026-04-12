@@ -1,7 +1,7 @@
 {
   "name": "opencode-sidbar-context-breakdown",
   "version": "0.1.0",
-  "description": "OpenCode TUI plugin that shows % breakdown of context tokens (system, user, history, tool)",
+  "description": "OpenCode TUI plugin — sidebar context breakdown with % per role (system/user/history/tool)",
   "author": {
     "name": "dtx",
     "email": "dtruongxuan1397@gmail.com"
@@ -9,12 +9,10 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "default": "./src/index.tsx"
     },
     "./tui": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "default": "./src/index.tsx"
     }
   },
   "repository": {
@@ -25,16 +23,16 @@
     "access": "public"
   },
   "files": [
-    "dist"
+    "src"
   ],
   "dependencies": {
-    "@opencode-ai/plugin": "1.4.3",
-    "@opencode-ai/sdk": "1.4.3",
     "@opentui/core": "0.1.97",
     "@opentui/solid": "0.1.97",
     "solid-js": "1.9.10"
   },
   "devDependencies": {
+    "@opencode-ai/plugin": "1.4.3",
+    "@opencode-ai/sdk": "1.4.3",
     "@types/node": "^20.11.5",
     "bun-types": "latest",
     "typescript": "^5.8.2"

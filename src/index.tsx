@@ -1,3 +1,4 @@
+/** @jsxImportSource @opentui/solid */
 import type { AssistantMessage, UserMessage } from "@opencode-ai/sdk/v2"
 import type { Part } from "@opencode-ai/sdk/v2/client"
 import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
