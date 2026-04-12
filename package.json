@@ -6,6 +6,12 @@
     "name": "dtx",
     "email": "dtruongxuan1397@gmail.com"
   },
+  "contributors": [
+    {
+      "name": "OpenCode",
+      "url": "https://opencode.ai"
+    }
+  ],
   "type": "module",
   "exports": {
     ".": {
