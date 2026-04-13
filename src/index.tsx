@@ -60,6 +60,19 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   const cost = createMemo(() =>
     msg().reduce((sum, item) => sum + (item.role === "assistant" ? item.cost : 0), 0),
   )
+  const est = createMemo(() => {
+    const messages = msg()
+    const last = messages.findLast(
+      (item): item is AssistantMessage => item.role === "assistant" && item.tokens.output > 0,
+    )
+    if (!last) return 0
+    const t = last.tokens
+    const INPUT_RATE = 3 / 1000000
+    const OUTPUT_RATE = 15 / 1000000
+    const CACHE_WRITE_RATE = 3.75 / 1000000
+    const CACHE_READ_RATE = 0.30 / 1000000
+    return t.input * INPUT_RATE + t.output * OUTPUT_RATE + t.reasoning * OUTPUT_RATE + t.cache.write * CACHE_WRITE_RATE + t.cache.read * CACHE_READ_RATE
+  })
 
   const state = createMemo(() => {
     const messages = msg()
@@ -326,8 +339,21 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
           {mode() === "detail" ? "▼" : "▷"} <b>Context</b> {mkBar(state().percent ?? 0)}
         </text>
         <text fg={theme().text}>
-          {fmtNum(state().tokens)} tokens ({state().percent ?? 0}%)
-        </text>
+          {fmtNum(state().tokens)} tokens ({state().percent ?? 0}%)</text>
+        {cost() > 0 || (est() ?? 0) > 0 ? (
+          <box style={{ flexDirection: "row", flexWrap: "wrap" }}>
+            <text fg={theme().textMuted}> | </text>
+            {cost() > 0 && (
+              <text fg="#f44">Act {money.format(cost())}</text>
+            )}
+            {(est() ?? 0) > 0 && (
+              <>
+                <text fg={theme().textMuted}> | </text>
+                <text fg="#4f4">Est {money.format(est() ?? 0)}</text>
+              </>
+            )}
+          </box>
+        ) : null}
         {mc() && (
           <text fg={theme().textMuted}>
             {mc()!.total} msgs ({mc()!.user}U / {mc()!.assistant}A)
@@ -340,20 +366,33 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
         )}
       </box>
 
-      {mode() === "compact" && cp() && (
-        <>
-          {cp()!.system && (
-            <text fg="#5af">Sys {cp()!.system!.pct}% {fmtNum(cp()!.system!.tokens)}</text>
-          )}
-          <text fg="#adf">Usr {cp()!.user.total.pct}% {fmtNum(cp()!.user.total.tokens)}</text>
-          {cp()!.assistant.total.pct >= 1 && (
-            <text fg="#fda">Hst {cp()!.assistant.total.pct}% {fmtNum(cp()!.assistant.total.tokens)}</text>
-          )}
-          {cp()!.tool && cp()!.tool!.total.pct >= 1 && (
-            <text fg="#daf">Tls {cp()!.tool!.total.pct}% {fmtNum(cp()!.tool!.total.tokens)}</text>
-          )}
-        </>
-      )}
+      {mode() === "compact" && cp() ? (
+        <box style={{ flexDirection: "row", flexWrap: "wrap" }}>
+          {cp()!.system ? (
+            <>
+              <text fg="#5af">Sys </text>
+              <text fg="#5af">{cp()!.system!.pct}%</text>
+              <text fg={theme().textMuted}> | </text>
+            </>
+          ) : null}
+          <text fg="#adf">U </text>
+          <text fg="#adf">{cp()!.user.total.pct}%</text>
+          <text fg={theme().textMuted}> | </text>
+          {cp()!.assistant.total.pct >= 1 ? (
+            <>
+              <text fg="#fda">H </text>
+              <text fg="#fda">{cp()!.assistant.total.pct}%</text>
+              <text fg={theme().textMuted}> | </text>
+            </>
+          ) : null}
+          {cp()!.tool && cp()!.tool!.total.pct >= 1 ? (
+            <>
+              <text fg="#daf">T </text>
+              <text fg="#daf">{cp()!.tool!.total.pct}%</text>
+            </>
+          ) : null}
+        </box>
+      ) : null}
 
       {mode() === "detail" && (
         <>
