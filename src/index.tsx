@@ -340,18 +340,21 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
         <text fg={theme().text}>
           {mode() === "detail" ? "▼" : "▷"} <b>Context</b> {mkBar(state().percent ?? 0)}
         </text>
-        <text fg={theme().text}>
-          {fmtNum(state().tokens)} tokens ({state().percent ?? 0}%)</text>
-        {(cost() || (est() ?? 0) > 0) && (
-          <box style={{ flexDirection: "row", flexWrap: "wrap" }}>
-            {cost() !== undefined && (
-              <text fg="#f44">Act {money.format(cost())}</text>
-            )}
-            {(est() ?? 0) > 0 && (
-              <text fg="#4f4">Est {money.format(est() ?? 0)}</text>
-            )}
-          </box>
-        )}
+        <box style={{ flexDirection: "row", flexWrap: "wrap" }}>
+          <text fg={theme().text}>{fmtNum(state().tokens)} tokens ({state().percent ?? 0}%)</text>
+          {cost() !== undefined && (
+            <>
+              <text fg={theme().textMuted}>|</text>
+              <text fg="#f44">Act{money.format(cost())}</text>
+            </>
+          )}
+          {(est() ?? 0) > 0 && (
+            <>
+              <text fg={theme().textMuted}>|</text>
+              <text fg="#4f4">Est{money.format(est() ?? 0)}</text>
+            </>
+          )}
+        </box>
         {mc() && (
           <text fg={theme().textMuted}>
             {mc()!.total} msgs ({mc()!.user}U / {mc()!.assistant}A)

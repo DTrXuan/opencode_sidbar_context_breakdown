@@ -1,0 +1,3 @@
+$c = Get-Content 'D:\AI\opencode\selft_plugin_project\opencode_sidbar_context_breakdown\src\index.tsx' -Raw
+Set-Content -Path 'C:\Users\Admin\.config\opencode\node_modules\opencode-sidbar-context-breakdown\src\index.tsx.tmp' -Value $c -NoNewline
+Move-Item 'C:\Users\Admin\.config\opencode\node_modules\opencode-sidbar-context-breakdown\src\index.tsx.tmp' 'C:\Users\Admin\.config\opencode\node_modules\opencode-sidbar-context-breakdown\src\index.tsx' -Force
