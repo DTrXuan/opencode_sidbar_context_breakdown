@@ -470,8 +470,6 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
           )}
         </>
       )}
-
-      <text fg={theme().textMuted}>{money.format(cost())}</text>
     </box>
   )
 }
