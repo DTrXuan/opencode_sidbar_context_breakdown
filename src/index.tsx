@@ -71,7 +71,8 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
     const OUTPUT_RATE = 15 / 1000000
     const CACHE_WRITE_RATE = 3.75 / 1000000
     const CACHE_READ_RATE = 0.30 / 1000000
-    return t.input * INPUT_RATE + t.output * OUTPUT_RATE + t.reasoning * OUTPUT_RATE + t.cache.write * CACHE_WRITE_RATE + t.cache.read * CACHE_READ_RATE
+    const cache = t.cache ?? { write: 0, read: 0 }
+    return t.input * INPUT_RATE + t.output * OUTPUT_RATE + t.reasoning * OUTPUT_RATE + cache.write * CACHE_WRITE_RATE + cache.read * CACHE_READ_RATE
   })
 
   const state = createMemo(() => {
@@ -90,7 +91,8 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
       }
 
     const t = last.tokens
-    const tokens = t.input + t.output + t.reasoning + t.cache.read + t.cache.write
+    const cache = t.cache ?? { read: 0, write: 0 }
+    const tokens = t.input + t.output + t.reasoning + cache.read + cache.write
     const model = props.api.state.provider.find((p) => p.id === last.providerID)?.models[last.modelID]
 
     const pct = (n: number) => (tokens > 0 ? Math.round((n / tokens) * 100) : 0)
@@ -284,8 +286,8 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
         input: pct(t.input),
         output: pct(t.output),
         reasoning: pct(t.reasoning),
-        cacheRead: pct(t.cache.read),
-        cacheWrite: pct(t.cache.write),
+        cacheRead: pct(cache.read),
+        cacheWrite: pct(cache.write),
       },
       composition: {
         inputTokens: input,
@@ -396,7 +398,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
 
       {mode() === "detail" && (
         <>
-          {bd() && bd()!.input > 0 && cp() && (
+          {bd() && bd()!.input > 0 && cp() && bd() && (
             <text fg={theme().text}>
               In {bd()!.input}% {fmtNum(cp()!.inputTokens)}
             </text>
@@ -452,19 +454,19 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
             )
           })()}
 
-          {(bd()!.output > 0 || bd()!.reasoning > 0 || bd()!.cacheRead > 0 || bd()!.cacheWrite > 0) && (
+          {bd() && (bd()!.output > 0 || bd()!.reasoning > 0 || bd()!.cacheRead > 0 || bd()!.cacheWrite > 0) && (
             <text fg={theme().textMuted}>---</text>
           )}
-          {bd()!.output > 0 && (
+          {bd() && bd()!.output > 0 && (
             <text fg={theme().textMuted}>Out {bd()!.output}%</text>
           )}
-          {bd()!.reasoning > 0 && (
+          {bd() && bd()!.reasoning > 0 && (
             <text fg={theme().textMuted}>Thnk {bd()!.reasoning}%</text>
           )}
-          {bd()!.cacheRead > 0 && (
+          {bd() && bd()!.cacheRead > 0 && (
             <text fg={theme().textMuted}>CacheR {bd()!.cacheRead}%</text>
           )}
-          {bd()!.cacheWrite > 0 && (
+          {bd() && bd()!.cacheWrite > 0 && (
             <text fg={theme().textMuted}>CacheW {bd()!.cacheWrite}%</text>
           )}
         </>
