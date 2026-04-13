@@ -342,20 +342,12 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
         </text>
         <text fg={theme().text}>
           {fmtNum(state().tokens)} tokens ({state().percent ?? 0}%)</text>
-        {cost() > 0 || (est() ?? 0) > 0 ? (
-          <box style={{ flexDirection: "row", flexWrap: "wrap" }}>
-            <text fg={theme().textMuted}> | </text>
-            {cost() > 0 && (
-              <text fg="#f44">Act {money.format(cost())}</text>
-            )}
-            {(est() ?? 0) > 0 && (
-              <>
-                <text fg={theme().textMuted}> | </text>
-                <text fg="#4f4">Est {money.format(est() ?? 0)}</text>
-              </>
-            )}
-          </box>
-        ) : null}
+        {cost() > 0 && (
+          <text fg="#f44">Act {money.format(cost())}</text>
+        )}
+        {(est() ?? 0) > 0 && (
+          <text fg="#4f4">Est {money.format(est() ?? 0)}</text>
+        )}
         {mc() && (
           <text fg={theme().textMuted}>
             {mc()!.total} msgs ({mc()!.user}U / {mc()!.assistant}A)
@@ -398,6 +390,9 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
 
       {mode() === "detail" && (
         <>
+          {bd() && bd()!.input > 0 && cp() && bd() && (
+            <text fg={theme().textMuted}>---</text>
+          )}
           {bd() && bd()!.input > 0 && cp() && bd() && (
             <text fg={theme().text}>
               In {bd()!.input}% {fmtNum(cp()!.inputTokens)}
