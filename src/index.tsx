@@ -342,9 +342,9 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
         </text>
         <text fg={theme().text}>
           {fmtNum(state().tokens)} tokens ({state().percent ?? 0}%)</text>
-        {(cost() > 0 || (est() ?? 0) > 0) && (
+        {(cost() || (est() ?? 0) > 0) && (
           <box style={{ flexDirection: "row", flexWrap: "wrap" }}>
-            {cost() > 0 && (
+            {cost() !== undefined && (
               <text fg="#f44">Act {money.format(cost())}</text>
             )}
             {(est() ?? 0) > 0 && (
