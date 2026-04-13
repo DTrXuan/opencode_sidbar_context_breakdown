@@ -359,15 +359,15 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
           <box style={{ flexDirection: "row", flexWrap: "wrap" }}>
             {mc() && (
               <>
-                <text fg={theme().textMuted}>{mc()!.total}msgs</text>
-                <text fg={theme().textMuted}>|</text>
+                <text fg={theme().textMuted}>{mc()!.total} msgs</text>
+                <text fg={theme().textMuted}> | </text>
                 <text fg={theme().textMuted}>({mc()!.user}U/{mc()!.assistant}A)</text>
               </>
             )}
             {avg() && (
               <>
-                <text fg={theme().textMuted}>|</text>
-                <text fg={theme().textMuted}>avg{fmtNum(avg()!.perMessage)}/msg</text>
+                <text fg={theme().textMuted}> | </text>
+                <text fg={theme().textMuted}>avg {fmtNum(avg()!.perMessage)}/msg</text>
               </>
             )}
           </box>
